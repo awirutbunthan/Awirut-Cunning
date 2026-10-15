@@ -10,7 +10,16 @@ from pydantic import BaseModel
 from app.services.extraction import extract, infer_kind
 from app.services.matching import compare
 from app.services.security import validate_upload
-from app.services.storage import audits, documents
+from app.services.storage import (
+    get_audit as load_audit,
+)
+from app.services.storage import (
+    get_document as load_document,
+)
+from app.services.storage import (
+    save_audit,
+    save_document,
+)
 
 app = FastAPI(title="Ledger Beacon API")
 app.add_middleware(
@@ -19,8 +28,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
 class AuditRequest(BaseModel):
     po_document_id: str
     target_document_id: str
@@ -71,13 +78,13 @@ async def upload_document(file: UploadFile = File(...)):
         lines,
         provenance,
     )
-    documents[document.id] = document
+    save_document(document)
     return document_payload(document)
 
 
 @app.get("/api/documents/{document_id}")
 def get_document(document_id: str):
-    document = documents.get(document_id)
+    document = load_document(document_id)
     if document is None:
         raise HTTPException(404, "Document not found")
     return document_payload(document)
@@ -85,11 +92,11 @@ def get_document(document_id: str):
 
 @app.post("/api/audits", status_code=201)
 def create_audit(request: AuditRequest):
-    po, target = documents.get(request.po_document_id), documents.get(request.target_document_id)
+    po, target = load_document(request.po_document_id), load_document(request.target_document_id)
     if po is None or target is None:
         raise HTTPException(404, "Document not found")
     audit = compare(po, target, str(uuid4()))
-    audits[audit.id] = audit
+    save_audit(audit)
     return audit_payload(audit)
 
 
@@ -106,7 +113,7 @@ def audit_payload(audit):
 
 @app.get("/api/audits/{audit_id}")
 def get_audit(audit_id: str):
-    audit = audits.get(audit_id)
+    audit = load_audit(audit_id)
     if audit is None:
         raise HTTPException(404, "Audit not found")
     return audit_payload(audit)
@@ -114,7 +121,7 @@ def get_audit(audit_id: str):
 
 @app.get("/api/audits/{audit_id}/export.csv")
 def export_audit(audit_id: str):
-    audit = audits.get(audit_id)
+    audit = load_audit(audit_id)
     if audit is None:
         raise HTTPException(404, "Audit not found")
     output = StringIO()
