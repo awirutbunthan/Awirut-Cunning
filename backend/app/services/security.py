@@ -40,7 +40,7 @@ def validate_upload(filename: str, content_type: str | None, data: bytes) -> str
 def validate_content_signature(extension: str, data: bytes) -> None:
     if extension == ".pdf" and not data.startswith(b"%PDF-"):
         reject("File content is not a PDF")
-    if extension in {".xlsx", ".zip"} and not data.startswith(b"PK\\x03\\x04"):
+    if extension in {".xlsx", ".zip"} and not data.startswith(b"PK\x03\x04"):
         reject("File content is not a ZIP container")
     if extension == ".xlsx":
         try:
