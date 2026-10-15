@@ -1,0 +1,37 @@
+# MVP test report
+
+Date: 2026-10-15 (Asia/Bangkok)
+Branch: `feat/mvp-foundation`
+
+## Executed checks
+
+| Command | Result | Evidence |
+| --- | --- | --- |
+| `python -m pytest -q` (in `backend`) | PASS | 5 passed in 0.81s |
+| `python -m ruff check .` (in `backend`) | PASS | `All checks passed!` |
+| `npm ci` (in `frontend`) | PASS | 183 packages installed; 0 vulnerabilities reported by npm audit |
+| `npm run lint` (in `frontend`) | PASS | ESLint exited 0 |
+| `npm run typecheck` (in `frontend`) | PASS | TypeScript exited 0 |
+| `npm run test` (in `frontend`) | PASS | 1 Vitest UI test passed |
+| `npm run build` (in `frontend`) | PASS | Vite production build completed |
+
+## Coverage exercised
+
+- Health endpoint responds with `{"status":"ok"}`.
+- Synthetic PO and invoice XLSX files produce a deterministic total mismatch and CSV audit export.
+- Missing fields produce an explicit `MANUAL_REVIEW` result.
+- Invalid file types and ZIP path traversal are rejected.
+- The UI test verifies that the upload control is present and limited to PDF, XLSX, and ZIP.
+
+## Defects found and fixed during verification
+
+1. Editable Python installation initially failed because automatic package discovery considered the migration directory a second top-level package. Package discovery is now restricted to `app*`.
+2. The unconstrained FastAPI resolver selected a current FastAPI/Starlette combination that caused the API test client to hang on this runner. Runtime and test dependencies are pinned to a compatible set.
+3. Frontend typecheck initially failed because React declarations were not declared. `@types/react`, `@types/react-dom`, and Vite client types were added.
+
+## Remaining limitations
+
+- Persistence is currently in-memory; the included SQLite migration is a boundary/schema sketch, not a wired repository yet.
+- OCR is deliberately not implemented. Image-only PDFs are marked `OCR_REQUIRED`.
+- The parser supports conservative label and pipe-delimited synthetic layouts; production document templates need extension and test fixtures.
+- Authentication, durable audit-log storage, XLSX export, and third-party integrations are future milestones.
