@@ -31,9 +31,25 @@ def validate_upload(filename: str, content_type: str | None, data: bytes) -> str
         reject("Empty upload")
     if len(data) > settings.max_upload_bytes:
         reject("Upload exceeds size limit")
+    validate_content_signature(extension, data)
     if extension == ".zip":
         validate_zip(data)
     return extension
+
+
+def validate_content_signature(extension: str, data: bytes) -> None:
+    if extension == ".pdf" and not data.startswith(b"%PDF-"):
+        reject("File content is not a PDF")
+    if extension in {".xlsx", ".zip"} and not data.startswith(b"PK\\x03\\x04"):
+        reject("File content is not a ZIP container")
+    if extension == ".xlsx":
+        try:
+            with ZipFile(BytesIO(data)) as workbook:
+                names = set(workbook.namelist())
+        except BadZipFile:
+            reject("Invalid XLSX workbook")
+        if "[Content_Types].xml" not in names or not any(name.startswith("xl/") for name in names):
+            reject("File content is not an XLSX workbook")
 
 
 def validate_zip(data: bytes) -> None:
@@ -47,6 +63,8 @@ def validate_zip(data: bytes) -> None:
                 path = PurePosixPath(info.filename)
                 if path.is_absolute() or ".." in path.parts or "\\" in info.filename:
                     reject("ZIP contains an unsafe path")
+                if path.suffix.lower() == ".zip":
+                    reject("Nested ZIP archives are not supported")
                 if info.is_dir():
                     continue
                 if info.external_attr >> 16 & 0o170000 == 0o120000:
