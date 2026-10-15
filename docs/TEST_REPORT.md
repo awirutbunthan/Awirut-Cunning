@@ -15,8 +15,9 @@ Branch: `feat/mvp-foundation`
 | `npm run typecheck` (in `frontend`) | PASS | TypeScript exited 0 |
 | `npm run test` (in `frontend`) | PASS | 1 Vitest UI test passed |
 | `npm run build` (in `frontend`) | PASS | Vite production build completed |
+| GitHub Actions CI run #4 | PASS | Backend and frontend jobs completed successfully after the SQLite revision |
 
-After adding SQLite persistence, direct storage verification (`save_document` then `get_document`) passed. A repeat API-suite run on this Windows runner could not complete because the runner began refusing local socket access (the same restriction prevented a temporary Uvicorn health probe). The GitHub Actions Linux run is therefore the authoritative pending integration recheck for this persistence-only revision.
+After adding SQLite persistence, direct storage verification (`save_document` then `get_document`) passed. A repeat API-suite run on this Windows runner could not complete because the runner began refusing local socket access (the same restriction prevented a temporary Uvicorn health probe). GitHub Actions CI run #4 subsequently passed its backend and frontend jobs, providing the authoritative Linux integration recheck for this persistence-only revision.
 
 ## Coverage exercised
 
